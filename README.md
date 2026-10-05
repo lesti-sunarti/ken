@@ -1,17 +1,14 @@
 # Sang Penjaga Abu
 
-Game aksi 3D orisinal: bertahan di arena berkabut, menghindari serangan, dan menebas gerombolan mayat hidup. Seluruh arena, karakter, efek, dan tekstur dibuat secara prosedural—tidak memerlukan unduhan aset tambahan. Game dimainkan langsung di browser; renderer 2D ringan menjadi fallback jika WebGL2 tidak tersedia.
+Game aksi orisinal: bertahan di hutan berkabut, menghindari serangan, dan menebas gerombolan mayat hidup. Arena dan karakter dibangun secara prosedural, diperkaya tekstur PBR 1K dan HDRI hutan yang dibundel bersama game. Renderer utama memakai WebGL2; renderer Canvas 2D ringan menjaga game tetap dapat dimainkan jika WebGL2 tidak tersedia. Game dimainkan langsung di browser tanpa bergantung pada server aset eksternal.
+
+## Aset
+
+Tekstur tanah hutan ([Forest Floor](https://polyhaven.com/a/forest_floor)), kulit pinus ([Pine Bark](https://polyhaven.com/a/pine_bark)), batu berlumut, serta HDRI ([Forest Slope](https://polyhaven.com/a/forest_slope)) berasal dari [Poly Haven](https://polyhaven.com/) dan berlisensi [CC0](https://polyhaven.com/license). Berkasnya disertakan di repo, jadi game tidak perlu mengunduh aset dari Poly Haven saat dimainkan.
 
 ## Main
 
-**Main langsung:** [Sang Penjaga Abu](https://lesti-sunarti.github.io/ken/). Tautan aktif setelah GitHub Pages diaktifkan satu kali:
-
-1. Buka [pengaturan Pages repo](https://github.com/lesti-sunarti/ken/settings/pages).
-2. Pada **Build and deployment → Source**, pilih **GitHub Actions** lalu simpan.
-3. Buka tab **Actions** dan pilih workflow **Deploy Sang Penjaga Abu**. Jika belum berjalan otomatis, pilih **Run workflow** pada branch `hoplite/mytilene-05548326`; bila run awal gagal sebelum Pages aktif, pilih **Re-run jobs**.
-4. Setelah deployment berhasil, game tersedia di tautan di atas. Push berikutnya akan menerbitkan versi terbaru otomatis.
-
-GitHub Pages belum aktif di repo saat ini, jadi langkah pertama perlu dilakukan oleh pemilik repo. Game dapat langsung dicoba lewat Preview di lingkungan pengembangan.
+**Main langsung:** [Sang Penjaga Abu](https://lesti-sunarti.github.io/ken/). GitHub Pages sudah dikonfigurasi melalui GitHub Actions; push ke branch `hoplite/mytilene-05548326` memicu workflow **Deploy Sang Penjaga Abu**. Periksa tab [Actions](https://github.com/lesti-sunarti/ken/actions) untuk status versi terbaru.
 
 Untuk menjalankannya secara lokal sebagai pengembang:
 
