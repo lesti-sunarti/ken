@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#080a0e" />
+    <meta name="description" content="Bertahan hidup di arena mitologi yang dikepung para mayat hidup. Main langsung di browser." />
+    <title>Sang Penjaga Abu — Nyala Terakhir</title>
+  </head>
+  <body>
+    <main id="game" aria-label="Sang Penjaga Abu, game aksi 3D">
+      <canvas id="world" aria-label="Arena pertempuran 3D"></canvas>
+      <div class="cinema-vignette" aria-hidden="true"></div>
+      <div id="damage-flash" class="damage-flash" aria-hidden="true"></div>
+
+      <section id="title-screen" class="title-screen" aria-labelledby="game-title">
+        <div class="masthead">
+          <span class="brand-mark" aria-hidden="true">ᚨ</span>
+          <span class="brand-name">KISAH DARI TANAH ABU</span>
+          <span class="masthead-rule"></span>
+          <span class="chapter-label">BAB I &nbsp;·&nbsp; 02:17</span>
+        </div>
+
+        <div class="intro-copy">
+          <p class="eyebrow"><span class="eyebrow-dot"></span> MITOLOGI &nbsp; / &nbsp; BERTAHAN HIDUP</p>
+          <h1 id="game-title"><span>Sang Penjaga</span><span class="title-last">Abu</span></h1>
+          <div class="title-divider"><span></span><i></i><span></span></div>
+          <p class="intro-description">Ketika lonceng terakhir berhenti berdentang, para mati pun terbangun. Tahan garis pertahanan—dan nyalakan kembali api yang menjaga dunia.</p>
+
+          <button id="start-button" class="primary-button" type="button" aria-label="Mulai Perburuan">
+            <span>Mulai Perburuan</span>
+            <span class="button-arrow" aria-hidden="true">↗</span>
+          </button>
+          <p id="boot-status" class="boot-status">MENYIAPKAN ARENA</p>
+        </div>
+
+        <div class="intro-footer">
+          <div class="control-guide" aria-label="Kontrol permainan">
+            <span><kbd>W A S D</kbd> BERGERAK</span>
+            <span><kbd>KLIK KIRI</kbd> MENEBAS</span>
+            <span><kbd>SPASI</kbd> MENGELAK</span>
+          </div>
+          <span class="edition-label">PENGALAMAN AKSI 3D &nbsp;·&nbsp; BROWSER</span>
+        </div>
+      </section>
+
+      <section id="hud" class="hud is-hidden" aria-label="Status permainan">
+        <header class="hud-topline">
+          <div class="hud-brand">
+            <span class="brand-mark small" aria-hidden="true">ᚨ</span>
+            <div><strong>PENJAGA ABU</strong><span>API TERAKHIR</span></div>
+          </div>
+
+          <div class="wave-status" aria-live="polite">
+            <span class="hud-kicker">GEROMBOLAN</span>
+            <strong><span id="wave-number">01</span><i>/</i>05</strong>
+            <span id="objective-copy" class="objective-copy">Bertahanlah.</span>
+          </div>
+
+          <div class="hud-right">
+            <div class="kill-counter"><span class="skull-mark" aria-hidden="true">✦</span><div><strong id="kill-count">00</strong><span>DITAKLUKKAN</span></div></div>
+            <button id="pause-button" class="pause-button" type="button" aria-label="Jeda permainan"><span></span><span></span></button>
+          </div>
+        </header>
+
+        <div class="vitals-panel">
+          <div class="vitals-heading"><span>DAYA HIDUP</span><strong><span id="health-value">100</span><small> / 100</small></strong></div>
+          <div class="health-track"><span id="health-fill"></span><i></i><i></i><i></i></div>
+          <div class="vitals-caption"><span>NAFAS PENJAGA</span><span id="enemy-count">04 MUSUH</span></div>
+        </div>
+
+        <div id="combo-panel" class="combo-panel is-hidden" aria-live="polite">
+          <span>RANGKAIAN</span><strong id="combo-count">02</strong><i>×</i>
+        </div>
+
+        <div id="crosshair" class="crosshair" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+        <div class="combat-hints" aria-label="Bantuan kontrol">
+          <span><kbd>WASD</kbd> BERGERAK</span>
+          <span><kbd>KLIK KIRI</kbd> TEBAS</span>
+          <span><kbd>SPASI</kbd> MENGELAK</span>
+          <span><kbd>ESC</kbd> JEDA</span>
+        </div>
+        <div id="lock-hint" class="lock-hint">KLIK ARENA UNTUK MENGARAHKAN KAMERA</div>
+      </section>
+
+      <section id="pause-overlay" class="modal-overlay is-hidden" aria-labelledby="pause-title" aria-modal="true" role="dialog">
+        <div class="modal-card">
+          <p class="eyebrow">NAPAS SEJENAK</p>
+          <h2 id="pause-title">Perburuan<br /><em>tertunda.</em></h2>
+          <p>Para mati menunggu di balik kabut.</p>
+          <button id="resume-button" class="primary-button modal-button" type="button"><span>Lanjutkan</span><span class="button-arrow" aria-hidden="true">↗</span></button>
+          <button id="restart-button" class="quiet-button" type="button">ULANGI PERBURUAN</button>
+        </div>
+      </section>
+
+      <section id="end-overlay" class="modal-overlay is-hidden" aria-labelledby="end-title" aria-modal="true" role="dialog">
+        <div class="modal-card">
+          <p id="end-kicker" class="eyebrow">API MASIH MENYALA</p>
+          <h2 id="end-title">Fajar<br /><em>menyambut.</em></h2>
+          <p id="end-copy">Kau telah menahan malam.</p>
+          <button id="again-button" class="primary-button modal-button" type="button"><span>Bertarung lagi</span><span class="button-arrow" aria-hidden="true">↗</span></button>
+          <button id="title-button" class="quiet-button" type="button">KEMBALI KE AWAL</button>
+        </div>
+      </section>
+
+      <div id="touch-controls" class="touch-controls is-hidden" aria-label="Kontrol sentuh">
+        <div class="move-pad" aria-label="Bergerak">
+          <button type="button" data-move="forward" aria-label="Maju">⌃</button>
+          <button type="button" data-move="left" aria-label="Ke kiri">‹</button>
+          <button type="button" data-move="back" aria-label="Mundur">⌄</button>
+          <button type="button" data-move="right" aria-label="Ke kanan">›</button>
+        </div>
+        <div class="touch-actions">
+          <button type="button" data-action="dodge" aria-label="Mengelak">MENGELAK</button>
+          <button type="button" data-action="attack" aria-label="Menebas">TEBAS</button>
+        </div>
+      </div>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
