@@ -32,6 +32,7 @@
             <span class="button-arrow" aria-hidden="true">↗</span>
           </button>
           <p id="boot-status" class="boot-status">MENYIAPKAN ARENA</p>
+          <p id="record-summary" class="record-summary" aria-live="polite"></p>
         </div>
 
         <div class="intro-footer">
@@ -39,6 +40,10 @@
             <span><kbd>W A S D</kbd> BERGERAK</span>
             <span><kbd>KLIK KIRI</kbd> MENEBAS</span>
             <span><kbd>SPASI</kbd> MENGELAK</span>
+          </div>
+          <div class="control-guide touch-guide" aria-label="Kontrol sentuh">
+            <span>PAD SENTUH BERGERAK</span>
+            <span>TEBAS &amp; MENGELAK</span>
           </div>
           <span class="edition-label">PENGALAMAN AKSI 3D &nbsp;·&nbsp; BROWSER</span>
         </div>
@@ -67,6 +72,12 @@
           <div class="vitals-heading"><span>DAYA HIDUP</span><strong><span id="health-value">100</span><small> / 100</small></strong></div>
           <div class="health-track"><span id="health-fill"></span><i></i><i></i><i></i></div>
           <div class="vitals-caption"><span>NAFAS PENJAGA</span><span id="enemy-count">04 MUSUH</span></div>
+        </div>
+
+        <div class="run-score" aria-label="Skor perburuan">
+          <span>SKOR</span>
+          <strong id="score-count">0</strong>
+          <small id="best-score">REKOR 0</small>
         </div>
 
         <div id="combo-panel" class="combo-panel is-hidden" aria-live="polite">

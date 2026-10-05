@@ -4,7 +4,14 @@ Game aksi 3D orisinal: bertahan di arena berkabut, menghindari serangan, dan men
 
 ## Main
 
-Game berjalan langsung di browser desktop atau ponsel. Untuk menerbitkan build statis, jalankan `npm run build` dan letakkan isi `dist/` di hosting statis.
+**Main langsung:** [Sang Penjaga Abu](https://lesti-sunarti.github.io/ken/). Tautan aktif setelah GitHub Pages diaktifkan satu kali:
+
+1. Buka [pengaturan Pages repo](https://github.com/lesti-sunarti/ken/settings/pages).
+2. Pada **Build and deployment → Source**, pilih **GitHub Actions** lalu simpan.
+3. Buka tab **Actions** dan pilih workflow **Deploy Sang Penjaga Abu**. Jika belum berjalan otomatis, pilih **Run workflow** pada branch `hoplite/mytilene-05548326`; bila run awal gagal sebelum Pages aktif, pilih **Re-run jobs**.
+4. Setelah deployment berhasil, game tersedia di tautan di atas. Push berikutnya akan menerbitkan versi terbaru otomatis.
+
+GitHub Pages belum aktif di repo saat ini, jadi langkah pertama perlu dilakukan oleh pemilik repo. Game dapat langsung dicoba lewat Preview di lingkungan pengembangan.
 
 Untuk menjalankannya secara lokal sebagai pengembang:
 

@@ -9,6 +9,7 @@ const $ = (selector) => document.querySelector(selector);
 const TAU = Math.PI * 2;
 const STEP = 1 / 60;
 const ARENA_LIMIT = 14.7;
+const RECORD_KEY = 'sang-penjaga-abu:best-run-v1';
 
 const ui = {
   canvas: $('#world'),
@@ -32,6 +33,9 @@ const ui = {
   endCopy: $('#end-copy'),
   endKicker: $('#end-kicker'),
   lockHint: $('#lock-hint'),
+  recordSummary: $('#record-summary'),
+  score: $('#score-count'),
+  bestScore: $('#best-score'),
 };
 
 let renderer;
@@ -82,7 +86,9 @@ const player = {
   dodgeCooldown: 0,
   invulnerable: 0,
   combo: 0,
+  comboTimer: 0,
   lastAttackAt: 0,
+  hitTargets: new Set(),
   walking: false,
   facing: 0,
 };
@@ -90,6 +96,8 @@ const player = {
 const run = {
   wave: 0,
   kills: 0,
+  score: 0,
+  record: loadBestRun(),
   nextWaveIn: null,
   elapsed: 0,
   hasLockedPointer: false,
@@ -150,6 +158,25 @@ if (webglContext) {
 bindControls();
 updateHud();
 requestAnimationFrame(frame);
+
+function loadBestRun() {
+  const empty = { score: 0, kills: 0, wave: 0 };
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(RECORD_KEY) || 'null');
+    if (!saved || !Number.isFinite(saved.score)) return empty;
+    return {
+      score: Math.max(0, Math.floor(saved.score)),
+      kills: Math.max(0, Math.floor(saved.kills || 0)),
+      wave: Math.max(0, Math.floor(saved.wave || 0)),
+    };
+  } catch {
+    return empty;
+  }
+}
+
+function formatScore(score) {
+  return Math.max(0, Math.floor(score)).toLocaleString('id-ID');
+}
 
 function mulberry32(seed) {
   return () => {
@@ -1098,6 +1125,7 @@ function startGame() {
   heldKeys.clear();
   run.wave = 0;
   run.kills = 0;
+  run.score = 0;
   run.elapsed = 0;
   run.nextWaveIn = null;
   run.hasLockedPointer = false;
@@ -1111,7 +1139,9 @@ function startGame() {
   player.dodgeCooldown = 0;
   player.invulnerable = 0;
   player.combo = 0;
+  player.comboTimer = 0;
   player.lastAttackAt = 0;
+  player.hitTargets.clear();
   player.facing = 0;
   player.root.rotation.y = 0;
   cameraYaw = 0;
@@ -1190,11 +1220,8 @@ function attack() {
     player.attackCooldown = 0.47;
     player.facing = cameraYaw;
     fallback.swingHit = false;
-    const now = performance.now() / 1000;
-    player.combo = now - player.lastAttackAt < 1.25 ? Math.min(player.combo + 1, 9) : 1;
-    player.lastAttackAt = now;
+    player.hitTargets.clear();
     tone(245, 94, 0.16, 0.025, 'sawtooth');
-    updateHud();
     return;
   }
 
@@ -1202,11 +1229,27 @@ function attack() {
   player.attackCooldown = 0.49;
   player.facing = cameraYaw;
   player.root.rotation.y = cameraYaw;
+  player.hitTargets.clear();
+  tone(245, 94, 0.16, 0.025, 'sawtooth');
+}
+
+function registerHit() {
   const now = performance.now() / 1000;
   player.combo = now - player.lastAttackAt < 1.25 ? Math.min(player.combo + 1, 9) : 1;
   player.lastAttackAt = now;
-  tone(245, 94, 0.16, 0.025, 'sawtooth');
+  player.comboTimer = 1.4;
+  run.score += (20 + player.combo * 5) * Math.max(1, run.wave);
   updateHud();
+  return player.combo;
+}
+
+function tickCombo(delta) {
+  if (player.comboTimer <= 0) return;
+  player.comboTimer = Math.max(0, player.comboTimer - delta);
+  if (player.comboTimer === 0 && player.combo > 0) {
+    player.combo = 0;
+    updateHud();
+  }
 }
 
 function dodge() {
@@ -1247,6 +1290,7 @@ function updatePlayer(delta) {
   player.dodgeCooldown = Math.max(0, player.dodgeCooldown - delta);
   player.dodgeTimer = Math.max(0, player.dodgeTimer - delta);
   player.invulnerable = Math.max(0, player.invulnerable - delta);
+  tickCombo(delta);
 
   const direction = movementDirection();
   player.walking = direction.lengthSq() > 0.025;
@@ -1279,7 +1323,7 @@ function updatePlayer(delta) {
     const progress = 1 - player.attackTimer / 0.48;
     player.weapon.rotation.z = 2.25 - Math.sin(Math.min(progress / 0.86, 1) * Math.PI) * 2.35;
     player.rightArm.rotation.x = -0.32 - Math.sin(progress * Math.PI) * 0.68;
-    if (progress > 0.18 && progress < 0.7) resolveSwing(progress);
+    if (progress > 0.18 && progress < 0.7) resolveSwing();
   } else {
     player.weapon.rotation.z = THREE.MathUtils.damp(player.weapon.rotation.z, 2.25, 9, delta);
   }
@@ -1291,16 +1335,12 @@ function updatePlayer(delta) {
   }
 }
 
-let lastSwingFrame = -1;
-function resolveSwing(progress) {
-  const frame = Math.floor(progress * 8);
-  if (frame === lastSwingFrame) return;
-  lastSwingFrame = frame;
+function resolveSwing() {
   const frontX = -Math.sin(player.root.rotation.y);
   const frontZ = -Math.cos(player.root.rotation.y);
 
   for (const enemy of enemies) {
-    if (enemy.dead) continue;
+    if (enemy.dead || player.hitTargets.has(enemy)) continue;
     const dx = enemy.root.position.x - player.root.position.x;
     const dz = enemy.root.position.z - player.root.position.z;
     const distance = Math.hypot(dx, dz);
@@ -1308,7 +1348,9 @@ function resolveSwing(progress) {
     const forwardDot = (dx * frontX + dz * frontZ) / distance;
     if (forwardDot < -0.04) continue;
 
-    const damage = 35 + Math.min(player.combo, 4) * 3;
+    player.hitTargets.add(enemy);
+    const combo = registerHit();
+    const damage = 35 + Math.min(combo, 4) * 3;
     enemy.health -= damage;
     enemy.stun = 0.3;
     enemy.attackWindup = -1;
@@ -1331,6 +1373,7 @@ function killEnemy(enemy) {
   enemy.deathTimer = 0.64;
   enemy.attackWindup = -1;
   run.kills += 1;
+  run.score += 75 * Math.max(1, run.wave);
   player.health = Math.min(100, player.health + 6);
   const origin = enemy.root.position.clone();
   origin.y += 1.12;
@@ -1485,8 +1528,11 @@ function updateWaves(delta) {
       return;
     }
     run.nextWaveIn = 3.1;
+    const waveBonus = 250 * run.wave;
+    run.score += waveBonus;
     ui.objective.textContent = 'Gelombang berikutnya mendekat.';
-    sayToast('KEHENINGAN TAK AKAN BERTAHAN', 1900);
+    sayToast(`+${formatScore(waveBonus)} POIN  ·  KEHENINGAN TAK AKAN BERTAHAN`, 2100);
+    updateHud();
   }
 
   run.nextWaveIn -= delta;
@@ -1495,6 +1541,7 @@ function updateWaves(delta) {
 
 function finishGame(victory) {
   if (mode !== 'playing') return;
+  const recordBeaten = saveBestRun();
   mode = 'ended';
   heldKeys.clear();
   $('#touch-controls').classList.add('is-hidden');
@@ -1503,12 +1550,12 @@ function finishGame(victory) {
   if (victory) {
     ui.endKicker.textContent = 'API MASIH MENYALA';
     ui.endTitle.innerHTML = 'Fajar<br /><em>menyambut.</em>';
-    ui.endCopy.textContent = `Lima gerombolan tumbang. Kau menaklukkan ${run.kills} mayat sebelum pagi tiba.`;
+    ui.endCopy.textContent = `Lima gerombolan tumbang. ${run.kills} mayat ditaklukkan, skor ${formatScore(run.score)} poin.${recordBeaten ? ' Rekor baru!' : ''}`;
     tone(310, 620, 0.62, 0.045, 'sine');
   } else {
     ui.endKicker.textContent = 'MALAM MENELAN SEGALANYA';
     ui.endTitle.innerHTML = 'Api<br /><em>meredup.</em>';
-    ui.endCopy.textContent = `Perburuan berakhir setelah ${run.kills} musuh ditaklukkan. Bangkit dan coba lagi.`;
+    ui.endCopy.textContent = `Perburuan berakhir dengan ${run.kills} musuh tumbang dan skor ${formatScore(run.score)} poin.${recordBeaten ? ' Rekor baru!' : ''} Bangkit dan coba lagi.`;
     tone(110, 37, 0.75, 0.055, 'triangle');
   }
   if (document.pointerLockElement) document.exitPointerLock();
@@ -1526,6 +1573,25 @@ function updateHud() {
   ui.waveNumber.textContent = String(Math.max(1, run.wave)).padStart(2, '0');
   ui.comboCount.textContent = String(player.combo).padStart(2, '0');
   ui.combo.classList.toggle('is-hidden', player.combo < 2 || mode !== 'playing');
+  ui.score.textContent = formatScore(run.score);
+  ui.bestScore.textContent = `REKOR ${formatScore(run.record.score)}`;
+  if (run.record.score > 0) {
+    ui.recordSummary.textContent = `REKOR ${formatScore(run.record.score)} POIN  ·  GELOMBANG ${String(run.record.wave).padStart(2, '0')}  ·  ${String(run.record.kills).padStart(2, '0')} MAYAT`;
+  } else {
+    ui.recordSummary.textContent = 'REKOR MENUNGGU  ·  RAIH SKOR TERBAIK';
+  }
+}
+
+function saveBestRun() {
+  if (run.score <= run.record.score) return false;
+  run.record = { score: run.score, kills: run.kills, wave: run.wave };
+  try {
+    window.localStorage.setItem(RECORD_KEY, JSON.stringify(run.record));
+  } catch {
+    // Keep the current-session record even when storage is unavailable.
+  }
+  updateHud();
+  return true;
 }
 
 function sayToast(message, duration = 1700) {
@@ -1634,6 +1700,7 @@ function updateFallback(delta) {
   player.dodgeCooldown = Math.max(0, player.dodgeCooldown - delta);
   player.dodgeTimer = Math.max(0, player.dodgeTimer - delta);
   player.invulnerable = Math.max(0, player.invulnerable - delta);
+  tickCombo(delta);
 
   const direction = movementDirection();
   player.walking = direction.lengthSq() > 0.025;
@@ -1779,7 +1846,9 @@ function resolveFallbackSwing() {
     if (distance > 2.55 || distance < 0.01) continue;
     if ((dx * frontX + dz * frontZ) / distance < -0.04) continue;
 
-    enemy.health -= 35 + Math.min(player.combo, 4) * 3;
+    player.hitTargets.add(enemy);
+    const combo = registerHit();
+    enemy.health -= 35 + Math.min(combo, 4) * 3;
     enemy.stun = 0.3;
     enemy.attackWindup = -1;
     enemy.vx += (dx / distance) * 5.7;
@@ -1792,6 +1861,7 @@ function resolveFallbackSwing() {
       enemy.dead = true;
       enemy.deathTimer = 0.58;
       run.kills += 1;
+      run.score += 75 * Math.max(1, run.wave);
       player.health = Math.min(100, player.health + 6);
       burst({ x: enemy.x, y: 1.12, z: enemy.z }, 0xe98554, 24, 4.6);
       tone(85, 31, 0.22, 0.045, 'sawtooth');
